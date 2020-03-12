@@ -5,7 +5,6 @@ import 'bootstrap/dist/css/bootstrap.css';
 import { ToggleButtonGroup, ToggleButton, Table } from 'react-bootstrap';
 
 function JournalTable(props) {
-  //console.log(props.groupId)
   const [journals, setJournals] = useState([])
   useEffect(() => {
     fetch(`http://localhost:8080/api/journals?group_id=${props.groupId}`)
@@ -26,7 +25,7 @@ function JournalTable(props) {
   <tbody>
     {journals.map((journal, index) => {
       return <tr>
-      <td>{index + 1}</td>
+      <td>{journal.journalId}</td>
       <td>{journal.studentSurname + ' ' + journal.studentName + ' ' + journal.studentSecondName}</td>
       <td>{journal.subjectName}</td>
       <td>{journal.examType}</td>
@@ -34,6 +33,48 @@ function JournalTable(props) {
       </tr>
     })}
   </tbody>
+  </Table>
+}
+
+function StudentTable(props) {
+  const [students, setStudents] = useState([])
+  const [journals, setJournals] = useState([])
+  useEffect(() => {
+    fetch(`http://localhost:8080/api/students?group_id=${props.groupId}`)
+    .then(res => res.json())
+    .then(res => setStudents(res))
+    .catch(err => console.log(err))
+
+    fetch(`http://localhost:8080/api/journals?group_id=${props.groupId}`)
+    .then(res => res.json())
+    .then(res => setJournals(res))
+    .catch(err => console.log(err))
+  }, [props.groupId])
+  return <Table bordered>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>ФИО</th>
+        <th>Средний балл</th>
+      </tr>
+    </thead>
+    <tbody>
+      {students.map((student, index) => {
+        const filteredStudents = journals.filter((journal) => journal.studentId == student.studentId);
+        const reduced = filteredStudents.reduce((acc, cur) => {
+          acc += parseInt(cur.markValue);
+          return acc
+        }, 0)
+        const averageMark =  (reduced / filteredStudents.length) || '-';
+        console.log(averageMark)
+        return <tr>
+          <td>{student.studentId}</td>
+          <td>{student.studentSurname + ' ' + student.studentName + ' ' + student.studentSecondName}</td>
+          <td>{averageMark}
+          </td>
+        </tr>
+      })}
+    </tbody>
   </Table>
 }
 
@@ -49,12 +90,13 @@ function GroupTable() {
     return <ToggleButton key={group.groupId} value={group.groupId}>{group.groupName}</ToggleButton>
   });
   return (
-    <div>
+    <>
       <ToggleButtonGroup type="radio" name="group" value={groupId} onChange={setGroupId}>
         {listGroups}
       </ToggleButtonGroup>
       <JournalTable groupId={groupId}/>
-    </div>
+      <StudentTable groupId={groupId}/>
+    </>
   );
 }
 
