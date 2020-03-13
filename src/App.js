@@ -4,6 +4,27 @@ import './App.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import { ToggleButtonGroup, ToggleButton, Table } from 'react-bootstrap';
 
+const sorting = {
+  ALPHABET: "alphabet",
+  MARKS: "marks"
+}
+
+function sortStudents(students, sortType) {
+  switch (sortType) {
+    case sorting.ALPHABET:
+      console.log("alpha");
+      return students.sort((a, b) => a.studentName < b.studentName)
+    
+    case sorting.MARKS:
+      console.log("marks");
+      return students.sort((a, b) => a.markValue > b.markValue)
+    
+    default:
+      console.log("default");
+      return students.sort((a, b) => a.studentName < b.studentName)
+  }
+}
+
 function JournalTable(props) {
   const [journals, setJournals] = useState([])
   useEffect(() => {
@@ -49,7 +70,7 @@ function StudentTable(props) {
     .then(res => res.json())
     .then(res => setJournals(res))
     .catch(err => console.log(err))
-  }, [props.groupId])
+  }, [props.groupId, props.sortType])
   return <Table bordered>
     <thead>
       <tr>
@@ -59,15 +80,14 @@ function StudentTable(props) {
       </tr>
     </thead>
     <tbody>
-      {students.map((student, index) => {
+      {sortStudents(students, props.sortType).map((student, index) => {
         const filteredStudents = journals.filter((journal) => journal.studentId == student.studentId);
         const reduced = filteredStudents.reduce((acc, cur) => {
           acc += parseInt(cur.markValue);
           return acc
         }, 0)
         const averageMark =  (reduced / filteredStudents.length) || '-';
-        console.log(averageMark)
-        return <tr>
+        return <tr key={student.studentId}>
           <td>{student.studentId}</td>
           <td>{student.studentSurname + ' ' + student.studentName + ' ' + student.studentSecondName}</td>
           <td>{averageMark}
@@ -81,6 +101,7 @@ function StudentTable(props) {
 function GroupTable() {
   const [groups, setGroups] = useState([])
   const [groupId, setGroupId] = useState(1)
+  const [sortType, setSortType] = useState(sorting.ALPHABET)
   useEffect(() => {
     fetch("http://localhost:8080/api/groups")
     .then(res => res.json())
@@ -95,7 +116,11 @@ function GroupTable() {
         {listGroups}
       </ToggleButtonGroup>
       <JournalTable groupId={groupId}/>
-      <StudentTable groupId={groupId}/>
+      <ToggleButtonGroup type="radio" name="sort" value={sortType} onChange={setSortType}>
+        <ToggleButton value={sorting.ALPHABET}>По алфавиту</ToggleButton>
+        <ToggleButton value={sorting.MARKS}>По среднему баллу</ToggleButton>
+      </ToggleButtonGroup>
+      <StudentTable groupId={groupId} sortType={sortType}/>
     </>
   );
 }
